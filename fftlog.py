@@ -1,50 +1,71 @@
 import numpy as np
-import math as mt
 from scipy.special import gamma
-from scipy.fft import fft, ifft, fftshift
+from scipy.fft import rfft, irfft
 
-# sample size
-N = 100
 
-#indice sommatoria
-m = np.arange(mt.ceil(-N/2), mt.ceil(N/2)+1)
+def c_window(x, x_cut):
+    """
+    One-side window function of c_m,
+    Adapted from Eq.(C1) in McEwen et al. (2016), arXiv:1603.04826
+    """
+    x_right = x[-1] - x_cut
+    x_left = x[0] + x_cut
+    x_r = x[x[:] > x_right]
+    x_l = x[x[:] < x_left]
+    beta_right = (x[-1] - x_r) / (x[-1] - x_right)
+    beta_left = (x_l - x[0]) / (x_left - x[0])
+    W = np.ones(x.size)
+    W[x[:] > x_right] = beta_right - 1 / (2 * np.pi) * np.sin(2 * np.pi * beta_right)
+    W[x[:] < x_left] = beta_left - 1 / (2 * np.pi) * np.sin(2 * np.pi * beta_left)
+    return W
 
-#spaziatura logaritmica
-r = np.logspace((10)**(-5), 10., N, endpoint=False)
-L = np.log(r[1]) - np.log(r[0])
 
-#valori costanti
-a = 1; mu = 0; q = 1; kr = 1;
+   def g_m_vals(mu, q):
+    '''
+    g_m_vals function is adapted from FAST-PT
+    g_m_vals(mu,q) = gamma( (mu+1+q)/2 ) / gamma( (mu+1-q)/2 ) = gamma(alpha+)/gamma(alpha-)
+    mu = (alpha+) + (alpha-) - 1
+    q = (alpha+) - (alpha-)
+    switching to asymptotic form when |Im(q)| + |mu| > cut = 200
+    '''
+    if (mu + 1 + q.real[0] == 0):
+        print("gamma(0) encountered. Please change another nu value! Try nu=1.1 .")
+        exit()
+    imag_q = np.imag(q)
+    g_m = np.zeros(q.size, dtype=complex)
+    cut = 200
+    asym_q = q[np.absolute(imag_q) + np.absolute(mu) > cut]
+    asym_plus = (mu + 1 + asym_q) / 2.
+    asym_minus = (mu + 1 - asym_q) / 2.
 
-#valore esponente
-f = (2j+np.pi*m)/L
-z = q + f
-#print(z[24], z[25], z[75], z[76])
+    q_good = q[(np.absolute(imag_q) + np.absolute(mu) <= cut) & (q != mu + 1 + 0.0j)]
 
-#funzione f(k)
-f_r=r
+    alpha_plus = (mu + 1 + q_good) / 2.
+    alpha_minus = (mu + 1 - q_good) / 2.
 
-#fft per trovare c_m
-c_m= fft(f_r)/N
+    g_m[(np.absolute(imag_q) + np.absolute(mu) <= cut) & (q != mu + 1 + 0.0j)] = gamma(alpha_plus) / gamma(alpha_minus)
 
-#la shifto per avere ordinati c_-N/2 fino a c_N/2
-c_m_sh = fftshift(f_r)
+    # asymptotic form
+    g_m[np.absolute(imag_q) + np.absolute(mu) > cut] = np.exp(
+            (asym_plus - 0.5) * np.log(asym_plus) - (asym_minus - 0.5) * np.log(asym_minus) - asym_q \
+                + 1. / 12 * (1. / asym_plus - 1. / asym_minus) + 1. / 360. * (
+                            1. / asym_minus ** 3 - 1. / asym_plus ** 3) + 1. / 1260 * (
+                            1. / asym_plus ** 5 - 1. / asym_minus ** 5))
 
-#rapporto delle gamma
-num = (mu + 1 + z)/2.0
+    g_m[np.where(q == mu + 1 + 0.0j)[0]] = 0. + 0.0j
+    return g_m
 
-den = (mu + 1 - z)/2.0
+def g_l(l, z_array):
+    '''
+    gl = 2^z_array * gamma((l+z_array)/2.) / gamma((3.+l-z_array)/2.)
+    alpha+ = (l+z_array)/2.
+    alpha- = (3.+l-z_array)/2.
+    mu = (alpha+) + (alpha-) - 1 = l+0.5
+    q = (alpha+) - (alpha-) = z_array - 1.5
+    '''
+    g_l = 2. ** z_array * g_m_vals(l + 0.5, z_array - 1.5)
+    return g_l
 
-gamma_fraction = gamma(num)/gamma(den)
 
-#calcolo u_m
 
-u_m = (kr)**(-f)*(2**z)*gamma_fraction
 
-#moltiplico i due pezzi
-
-b_m = c_m_sh*u_m
-
-#fft back
-
-a_m = ifft(b_m)
