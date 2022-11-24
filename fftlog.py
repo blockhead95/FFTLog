@@ -66,6 +66,34 @@ def g_l(l, z_array):
     g_l = 2. ** z_array * g_m_vals(l + 0.5, z_array - 1.5)
     return g_l
 
+class fftlog():
+
+    def __init__(self, k, f_k, nu, c_w_w):
+        self.k = k
+        self.f_k = f_k
+        self.nu = nu
+        self.c_w_w = c_w_w
+        self.N = self.k.size
+        self.delta_l  = np.log(k[1]) - np.log(k[0])
+        self.m, self.c_m = self.get_c_m()
+        self.eta_m = (2*np.pi*self.m)/(self.delta_l*self.N)
+
+
+    def get_c_m(self):
+        f_b = self.f_k / (self.k**self.nu)
+        c_m = rfft(f_b)
+        m = np.arange(0, self.N // 2 + 1)
+        c_m = c_m * c_window(m, self.c_w_w * self.N // 2.)
+        return m, c_m
+
+    def fftlog(self, l):
+        z = self.nu + 1j * self.eta_m
+        r = (l + 1) / self.k[::-1]
+        u_m = self.c_m * (self.x[0]*y[0])**(-1j*self.eta_m)*g_l(l, z)
+        F_r = irfft(np.conj(u_m)) * r ** (-self.nu) * np.sqrt(np.pi)/4
+        return r, F_r
+
+
 
 
 
