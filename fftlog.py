@@ -20,7 +20,7 @@ def c_window(x, x_cut):
     return W
 
 
-   def g_m_vals(mu, q):
+def g_m_vals(mu, q):
     '''
     g_m_vals function is adapted from FAST-PT
     g_m_vals(mu,q) = gamma( (mu+1+q)/2 ) / gamma( (mu+1-q)/2 ) = gamma(alpha+)/gamma(alpha-)
@@ -89,7 +89,7 @@ class fftlog():
     def fftlog(self, l):
         z = self.nu + 1j * self.eta_m
         r = (l + 1) / self.k[::-1]
-        u_m = self.c_m * (self.x[0]*y[0])**(-1j*self.eta_m)*g_l(l, z)
+        u_m = self.c_m * (self.x[0]*r[0])**(-1j*self.eta_m)*g_l(l, z)
         F_r = irfft(np.conj(u_m)) * r ** (-self.nu) * np.sqrt(np.pi)/4
         return r, F_r
 
