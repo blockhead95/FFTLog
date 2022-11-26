@@ -89,7 +89,7 @@ class fftlog():
     def fftlog(self, l):
         z = self.nu + 1j * self.eta_m
         r = (l + 1) / self.k[::-1]
-        u_m = self.c_m * (self.x[0]*r[0])**(-1j*self.eta_m)*g_l(l, z)
+        u_m = self.c_m * (self.k[0]*r[0])**(-1j*self.eta_m)*g_l(l, z)
         F_r = irfft(np.conj(u_m)) * r ** (-self.nu) * np.sqrt(np.pi)/4
         return r, F_r
 
