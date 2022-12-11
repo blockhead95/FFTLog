@@ -18,6 +18,7 @@ def log_extrap(x, N_extrap_low, N_extrap_high,nome):
         #ax2.legend()
     x_extrap = np.hstack((low_x, x, high_x))
     return x_extrap
+
 def c_window(x, x_cut):
     """
     One-side window function of c_m,
